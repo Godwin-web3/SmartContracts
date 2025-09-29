@@ -1,4 +1,4 @@
-import { Deployer } from '@solarity/hardhat-migrate';
+import { Deployer, Reporter } from '@solarity/hardhat-migrate';
 import { ethers } from 'hardhat';
 
 import { DistributorV2, DistributorV2__factory } from '@/generated-types/ethers';
@@ -9,7 +9,9 @@ module.exports = async function (deployer: Deployer) {
   const impl = await deployer.deploy(DistributorV2__factory);
 
   // MS steps
-  await upgrade(deployer, impl);
+  // await upgrade(deployer, impl);
+
+  Reporter.reportContracts(['DistributorV2', await impl.getAddress()]);
 };
 
 const upgrade = async (deployer: Deployer, impl: DistributorV2) => {
@@ -21,3 +23,4 @@ const upgrade = async (deployer: Deployer, impl: DistributorV2) => {
 };
 
 // npx hardhat migrate --path-to-migrations ./deploy/capital-protocol/v7 --only 4
+// npx hardhat migrate --path-to-migrations ./deploy/capital-protocol/v7 --only 4 --network ethereum --verify --continue
