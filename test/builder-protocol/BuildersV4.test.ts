@@ -190,9 +190,6 @@ describe('BuildersV4', () => {
 
       expect(await builders.networkShareOwner()).to.equal(BOB);
     });
-    it('should revert if set zero address as owner', async () => {
-      await expect(builders.setNetworkShareOwner(ZERO_ADDR)).to.be.revertedWith('BU: cannot set zero address as owner');
-    });
     it('should revert if called by non-owner', async () => {
       await expect(builders.connect(BOB).setNetworkShareOwner(BOB)).to.be.revertedWith(
         'Ownable: caller is not the owner',

@@ -165,8 +165,6 @@ contract BuildersV4 is IBuildersV4, UUPSUpgradeable, OwnableUpgradeable {
     }
 
     function setNetworkShareOwner(address networkShareOwner_) public onlyOwner {
-        require(networkShareOwner_ != address(0), "BU: cannot set zero address as owner");
-
         networkShareOwner = networkShareOwner_;
 
         emit NetworkShareOwnerSet(networkShareOwner_);
@@ -174,7 +172,7 @@ contract BuildersV4 is IBuildersV4, UUPSUpgradeable, OwnableUpgradeable {
 
     function setNetworkShare(uint256 networkShare_) external {
         require(_msgSender() == networkShareOwner || _msgSender() == owner(), "BU: invalid caller");
-        require(networkShare_ <= PRECISION && networkShare_ > 0, "BU: invalid share");
+        require(networkShare_ <= PRECISION, "BU: invalid share");
 
         _updatePoolData(bytes32(0), address(0), 0);
 
