@@ -29,15 +29,20 @@ function forceTypechain() {
   return process.env.TYPECHAIN_FORCE === 'false';
 }
 
+// 19183235 - 64607378777276381331
+// 19183263 - 502357441883879637000
+// 19183265 --
+// 19183274 - -
+
 const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       initialDate: '1970-01-01T00:00:00Z',
       gas: 'auto',
-      // gasPrice: 500000000,
+      // gasPrice: 624381666,
       // forking: {
-      //   url: `https://mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
-      //   blockNumber: 23266590,
+      //   url: `https://eth-mainnet.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      //   blockNumber: 23444760,
       // },
       // forking: {
       //   url: `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_KEY}`,
