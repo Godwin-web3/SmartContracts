@@ -5,10 +5,10 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20, ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 
-import {IMOR, IERC20, IERC165} from "../interfaces/old/IMOR.sol";
+import {IMOR, IERC20, IERC165} from "./interfaces/IMOR.sol";
 
 contract MOR is IMOR, ERC20Capped, ERC20Burnable, Ownable {
-    constructor(uint256 cap_) ERC20("MOR", "MOR") ERC20Capped(cap_) {}
+    constructor(uint256 cap_) ERC20("MOR_TEST", "MOR_TEST") ERC20Capped(cap_) {}
 
     function supportsInterface(bytes4 interfaceId_) external pure returns (bool) {
         return

@@ -12,11 +12,12 @@ import {ILayerZeroEndpoint} from "@layerzerolabs/lz-evm-sdk-v1-0.7/contracts/int
 
 import {IGatewayRouter} from "@arbitrum/token-bridge-contracts/contracts/tokenbridge/libraries/gateway/IGatewayRouter.sol";
 
-import {IL1SenderV2, IERC165} from "../interfaces/capital-protocol/IL1SenderV2.sol";
+import {IL1SenderV3, IERC165} from "../interfaces/capital-protocol/IL1SenderV3.sol";
 import {IDistributor} from "../interfaces/capital-protocol/IDistributor.sol";
 import {IWStETH} from "../interfaces/tokens/IWStETH.sol";
+import {IL1ERC20Bridge} from "../interfaces/@lidofinance/lido-l2/contracts/optimism/interfaces/IL1ERC20Bridge.sol";
 
-contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
+contract L1SenderV3 is IL1SenderV3, OwnableUpgradeable, UUPSUpgradeable {
     /** @dev stETH token address */
     address public stETH;
 
@@ -24,10 +25,10 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
     address public distributor;
 
     /** @dev The config for Arbitrum bridge. Send wstETH to the Arbitrum */
-    ArbitrumBridgeConfig public arbitrumBridgeConfig;
+    TokenBridgeConfig public tokenBridgeConfig;
 
     /** @dev The config for LayerZero. Send MOR mint message to the Arbitrum */
-    LayerZeroConfig public layerZeroConfig;
+    MessageBridgeConfig public messageBridgeConfig;
 
     /** @dev UPGRADE `L1SenderV2` storage updates, add Uniswap integration  */
     address public uniswapSwapRouter;
@@ -40,13 +41,13 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function L1SenderV2__init() external initializer {
+    function L1SenderV3__init() external initializer {
         __Ownable_init();
         __UUPSUpgradeable_init();
     }
 
     function supportsInterface(bytes4 interfaceId_) external pure returns (bool) {
-        return interfaceId_ == type(IL1SenderV2).interfaceId || interfaceId_ == type(IERC165).interfaceId;
+        return interfaceId_ == type(IL1SenderV3).interfaceId || interfaceId_ == type(IERC165).interfaceId;
     }
 
     /**********************************************************************************************/
@@ -92,16 +93,16 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
      * Zro Payment Address - the address of the ZRO token holder who would pay for the transaction
      * Adapter Params - parameters for custom functionality. e.g. receive airdropped native gas from the relayer on destination
      */
-    function setLayerZeroConfig(LayerZeroConfig calldata layerZeroConfig_) external onlyOwner {
-        layerZeroConfig = layerZeroConfig_;
+    function setMessageBridgeConfig(MessageBridgeConfig calldata config_) external onlyOwner {
+        messageBridgeConfig = config_;
 
-        emit LayerZeroConfigSet(layerZeroConfig_);
+        emit MessageBridgeConfigSet(messageBridgeConfig);
     }
 
     function sendMintMessage(address user_, uint256 amount_, address refundTo_) external payable {
         require(_msgSender() == distributor, "L1S: the `msg.sender` isn't `distributor`");
 
-        LayerZeroConfig storage config = layerZeroConfig;
+        MessageBridgeConfig storage config = messageBridgeConfig;
 
         bytes memory receiverAndSenderAddresses_ = abi.encodePacked(config.receiver, address(this));
         bytes memory payload_ = abi.encode(user_, amount_);
@@ -116,7 +117,7 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
             config.adapterParams
         );
 
-        emit MintMessageSent(user_, amount_);
+        emit MessageSent(user_, amount_);
     }
 
     /**********************************************************************************************/
@@ -124,39 +125,39 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
     /**********************************************************************************************/
 
     /**
-     * @dev https://docs.arbitrum.io/build-decentralized-apps/reference/contract-addresses
-     * wstETH - the wstETH token address
-     * Gateway - see `L1 Gateway Router` at the link
-     * Receiver - `L2MessageReceiver` address
+     * @dev https://docs.lido.fi/deployed-contracts/#base
+     * wstETH - see `WstETH ERC20Bridged (proxy)` at the link
+     * Gateway - see `L1ERC20TokenBridge (proxy)` at the link
+     * Receiver - token receiver address on L2
      */
-    function setArbitrumBridgeConfig(ArbitrumBridgeConfig calldata newConfig_) external onlyOwner {
+    function setTokenBridgeConfig(TokenBridgeConfig calldata config_) external onlyOwner {
         require(stETH != address(0), "L1S: stETH is not set");
-        require(newConfig_.receiver != address(0), "L1S: invalid receiver");
+        require(config_.receiver != address(0), "L1S: invalid receiver");
 
-        ArbitrumBridgeConfig memory oldConfig_ = arbitrumBridgeConfig;
+        TokenBridgeConfig memory oldConfig_ = tokenBridgeConfig;
 
         if (oldConfig_.wstETH != address(0)) {
             IERC20(stETH).approve(oldConfig_.wstETH, 0);
-            IERC20(oldConfig_.wstETH).approve(IGatewayRouter(oldConfig_.gateway).getGateway(oldConfig_.wstETH), 0);
+
+            address oldGateway_;
+            try IGatewayRouter(oldConfig_.gateway).getGateway(oldConfig_.wstETH) returns (address gateway_) {
+                oldGateway_ = gateway_;
+            } catch {
+                oldGateway_ = oldConfig_.gateway;
+            }
+            IERC20(oldConfig_.wstETH).approve(oldGateway_, 0);
         }
 
-        IERC20(stETH).approve(newConfig_.wstETH, type(uint256).max);
-        IERC20(newConfig_.wstETH).approve(
-            IGatewayRouter(newConfig_.gateway).getGateway(newConfig_.wstETH),
-            type(uint256).max
-        );
+        IERC20(stETH).approve(config_.wstETH, type(uint256).max);
+        IERC20(config_.wstETH).approve(config_.gateway, type(uint256).max);
 
-        arbitrumBridgeConfig = newConfig_;
+        tokenBridgeConfig = config_;
 
-        emit ArbitrumBridgeConfigSet(newConfig_);
+        emit TokenBridgeConfigSet(tokenBridgeConfig);
     }
 
-    function sendWstETH(
-        uint256 gasLimit_,
-        uint256 maxFeePerGas_,
-        uint256 maxSubmissionCost_
-    ) external payable onlyOwner returns (bytes memory) {
-        ArbitrumBridgeConfig memory config_ = arbitrumBridgeConfig;
+    function sendWstETH(uint32 l2Gas_, bytes calldata data_) external onlyOwner {
+        TokenBridgeConfig memory config_ = tokenBridgeConfig;
         require(config_.wstETH != address(0), "L1S: wstETH isn't set");
 
         uint256 stETHBalance_ = IERC20(stETH).balanceOf(address(this));
@@ -166,20 +167,17 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
 
         uint256 amount_ = IWStETH(config_.wstETH).balanceOf(address(this));
 
-        bytes memory data_ = abi.encode(maxSubmissionCost_, "");
-
-        bytes memory res_ = IGatewayRouter(config_.gateway).outboundTransfer{value: msg.value}(
+        IL1ERC20Bridge l1ERC20Bridge_ = IL1ERC20Bridge(config_.gateway);
+        l1ERC20Bridge_.depositERC20To(
             config_.wstETH,
+            l1ERC20Bridge_.l2Token(),
             config_.receiver,
             amount_,
-            gasLimit_,
-            maxFeePerGas_,
+            l2Gas_,
             data_
         );
 
-        emit WstETHSent(amount_, gasLimit_, maxFeePerGas_, maxSubmissionCost_, res_);
-
-        return res_;
+        emit TokenSent(amount_, config_.receiver, l2Gas_, data_);
     }
 
     /**********************************************************************************************/
@@ -236,7 +234,7 @@ contract L1SenderV2 is IL1SenderV2, OwnableUpgradeable, UUPSUpgradeable {
     /**********************************************************************************************/
 
     function version() external pure returns (uint256) {
-        return 2;
+        return 3;
     }
 
     function _authorizeUpgrade(address) internal view override onlyOwner {}
