@@ -121,7 +121,7 @@ contract L1SenderV3 is IL1SenderV3, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /**********************************************************************************************/
-    /*** Arbitrum bridge functionality                                                          ***/
+    /*** Lido bridge functionality                                                              ***/
     /**********************************************************************************************/
 
     /**
