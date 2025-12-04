@@ -117,7 +117,7 @@ contract L1SenderV3 is IL1SenderV3, OwnableUpgradeable, UUPSUpgradeable {
             config.adapterParams
         );
 
-        emit MessageSent(user_, amount_);
+        emit MintMessageSent(user_, amount_);
     }
 
     /**********************************************************************************************/

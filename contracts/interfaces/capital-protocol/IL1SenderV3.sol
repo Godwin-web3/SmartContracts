@@ -12,7 +12,7 @@ interface IL1SenderV3 is IERC165 {
     event DistributorSet(address distributor);
     event UniswapSwapRouterSet(address uniswapSwapRouter);
     event MessageBridgeConfigSet(MessageBridgeConfig messageBridgeConfig);
-    event MessageSent(address user, uint256 amount);
+    event MintMessageSent(address user, uint256 amount);
     event TokenBridgeConfigSet(TokenBridgeConfig tokenBridgeConfig);
     event TokenSent(uint256 amount, address receiver, uint32 l2Gas, bytes data);
     event TokensSwapped(bytes path, uint256 amountIn, uint256 amountOut);
