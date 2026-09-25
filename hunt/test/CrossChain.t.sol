@@ -32,7 +32,7 @@ contract CrossChainTest is Forks {
     address internal constant L2_TOKEN_RECEIVER = 0x47176B2Af9885dC6C4575d4eFd63895f7Aaa4790;
     address internal constant L1_SENDER = 0x2Efd4430489e1a05A89c2f51811aC661B7E5FF84;
     address internal constant LZ_ENDPOINT = 0x3c2269811836af69497E5F486A85D7316753cf62;
-    address internal constant MOR = 0x092baadb7DEf4C3981454dD9c0A0D7FF07bCFc86;
+    address internal constant MOR = 0x092bAaDB7DEf4C3981454dD9c0A0D7FF07bCFc86;
     address internal constant WSTETH = 0x5979D7b546E38E414F7E9822514be443A4800529;
 
     function setUp() public {
@@ -78,22 +78,6 @@ contract CrossChainTest is Forks {
         vm.stopPrank();
 
         assertEq(IERC20Min(MOR).totalSupply(), supplyBefore, "MOR minted");
-    }
-
-    /// @dev Exploratory: even the endpoint cannot deliver a spoofed source address.
-    /// Not submittable by itself — it pranks the endpoint. Documents the check.
-    function test_EXPLORATORY_endpoint_cannot_spoof_sender() public {
-        address attacker = makeAddr("spoof");
-        uint256 supplyBefore = IERC20Min(MOR).totalSupply();
-        bytes memory payload = abi.encode(attacker, uint256(1_000_000 ether));
-
-        vm.prank(LZ_ENDPOINT);
-        vm.expectRevert();
-        IL2MessageReceiver(L2_RECEIVER).lzReceive(
-            101, abi.encodePacked(attacker, L2_RECEIVER), 1, payload
-        );
-
-        assertEq(IERC20Min(MOR).totalSupply(), supplyBefore, "spoofed source minted");
     }
 
     function test_unprivileged_cannot_drain_l2_token_receiver() public {

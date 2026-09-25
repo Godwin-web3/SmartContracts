@@ -62,6 +62,9 @@ interface IDistributor {
     function rewardPoolLastCalculatedTimestamp(uint256) external view returns (uint128);
     function undistributedRewards() external view returns (uint256);
     function l1Sender() external view returns (address);
+    function depositPoolAddresses(uint256 rewardPoolIndex, uint256 index) external view returns (address);
+    function rewardPool() external view returns (address);
+    function aavePoolAddressesProvider() external view returns (address);
 }
 
 interface IDepositPool {
